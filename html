@@ -1,94 +1,23 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Central - Dentro</title>
-  <style>
-    body{font-family:system-ui;max-width:900px;margin:30px auto;padding:0 16px}
-    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-    .badge{padding:6px 10px;border:1px solid #ccc;border-radius:999px}
-    table{width:100%;border-collapse:collapse;margin-top:14px}
-    th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;font-size:15px}
-    th{font-size:13px;color:#555}
-    .muted{color:#666;font-size:13px}
-    button{padding:10px 12px;font-size:14px}
-  </style>
-</head>
-<body>
-  <div class="top">
-    <div>
-      <h2 style="margin:0">Dentro de Central</h2>
-      <div class="muted">Actualiza cada 15 segundos</div>
-    </div>
-    <div class="badge" id="count">Cargando...</div>
-    <button onclick="load()">Actualizar ahora</button>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Legajo</th>
-        <th>Apellido</th>
-        <th>Nombre</th>
-        <th>Grado</th>
-        <th>Cargo</th>
-        <th>Especialidad</th>
-        <th>Último</th>
-      </tr>
-    </thead>
-    <tbody id="tbody">
-      <tr><td colspan="7" class="muted">Cargando...</td></tr>
-    </tbody>
-  </table>
-
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Prueba fichada</title></head>
+<body style="font-family:system-ui;max-width:420px;margin:30px auto;padding:0 14px">
+  <h3>Prueba fichada</h3>
+  <input id="legajo" placeholder="LEGAJO" inputmode="numeric" style="font-size:18px;padding:10px;width:100%">
+  <button onclick="fichar('INGRESO')" style="font-size:18px;padding:10px;width:100%;margin-top:10px">Ingreso</button>
+  <button onclick="fichar('SALIDA')" style="font-size:18px;padding:10px;width:100%;margin-top:10px">Salida</button>
+  <pre id="out" style="margin-top:12px;background:#f5f5f5;padding:10px;white-space:pre-wrap"></pre>
 <script>
-  const ENDPOINT = "https://script.google.com/macros/s/AKfycbzMSS1WIv2G53yu9jaWlianwsq2A6LEjlTY-pdnlD2b_awVtxNC7Il7AcnOxwTtNY_d/exec";
-
-  async function load(){
-    const tbody = document.getElementById("tbody");
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Cargando...</td></tr>`;
-
-    const r = await fetch(`${ENDPOINT}?action=dentro`, { cache: "no-store" });
-    const j = await r.json().catch(()=>({ok:false,error:"JSON inválido"}));
-
-    if(!j.ok){
-      tbody.innerHTML = `<tr><td colspan="7">Error: ${j.error || "desconocido"}</td></tr>`;
-      document.getElementById("count").textContent = "Error";
-      return;
-    }
-
-    document.getElementById("count").textContent = `Dentro: ${j.count}`;
-
-    if(j.count === 0){
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay personal fichado como DENTRO.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = j.data.map(p => `
-      <tr>
-        <td>${esc(p.legajo)}</td>
-        <td>${esc(p.apellido)}</td>
-        <td>${esc(p.nombre)}</td>
-        <td>${esc(p.grado)}</td>
-        <td>${esc(p.cargo)}</td>
-        <td>${esc(p.especialidad)}</td>
-        <td>${formatDate(p.ultimo_timestamp)}</td>
-      </tr>
-    `).join("");
-  }
-
-  function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-  function formatDate(x){
-    if(!x) return "";
-    const d = new Date(x);
-    if(isNaN(d.getTime())) return esc(x);
-    return d.toLocaleString("es-AR");
-  }
-
-  load();
-  setInterval(load, 15000);
+const ENDPOINT="https://script.google.com/macros/s/AKfycbzMSS1WIv2G53yu9jaWlianwsq2A6LEjlTY-pdnlD2b_awVtxNC7Il7AcnOxwTtNY_d/exec";
+async function getIP(){ try{ return (await (await fetch("https://api.ipify.org?format=json")).json()).ip||"" }catch(e){return ""} }
+async function fichar(mov){
+  const legajo=document.getElementById("legajo").value.trim();
+  const ip=await getIP();
+  const payload={legajo:legajo,movimiento:mov,ip_externa:ip,user_agent:navigator.userAgent};
+  const r=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const t=await r.text();
+  document.getElementById("out").textContent=t;
+}
 </script>
 </body>
 </html>
