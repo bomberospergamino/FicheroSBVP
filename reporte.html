@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reporte | Bomberos Pergamino</title>
+  <style>
+    body{margin:0;min-height:100vh;font-family:system-ui;background:linear-gradient(135deg,#062f45,#0a3a53);color:#fff;display:flex;align-items:center;justify-content:center;padding-bottom:90px}
+    .box{max-width:720px;margin:0 16px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:18px}
+    .dock{position:fixed;left:12px;right:12px;bottom:12px;height:74px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:18px;display:flex;align-items:center;justify-content:center}
+    .dockNav{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+    .dock a{text-decoration:none;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:12px 14px;font-weight:900;text-transform:uppercase;min-width:160px;display:flex;justify-content:center;gap:10px}
+    .dock a.active{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.30);position:relative}
+    .dock a.active::after{content:"";position:absolute;left:18px;right:18px;bottom:6px;height:4px;border-radius:999px;background:linear-gradient(90deg, rgba(199,55,59,.95), rgba(255,255,255,.35))}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2 style="margin:0 0 10px;text-transform:uppercase;letter-spacing:1px">Reporte</h2>
+    <p>Este módulo lo construimos después:</p>
+    <ul>
+      <li>Elegir rango de fechas (desde / hasta)</li>
+      <li>Descargar movimientos desde <b>FICHADAS</b> (CSV/Excel)</li>
+    </ul>
+  </div>
+
+  <div class="dock">
+    <div class="dockNav">
+      <a href="index.html">📌 FICHERO</a>
+      <a href="central.html">👥 EN CENTRAL</a>
+      <a class="active" href="reporte.html">📄 REPORTE</a>
+    </div>
+  </div>
+</body>
+</html>
