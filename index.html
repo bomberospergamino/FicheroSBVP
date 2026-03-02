@@ -38,16 +38,13 @@
       min-height:100vh;
       display:grid;
       grid-template-columns: 220px 1fr 280px;
-      padding: 18px 18px 18px;
+      padding: 18px;
       gap: 14px;
       position:relative;
     }
 
     /* Izquierda: logo arriba + tabs abajo-izquierda vertical */
-    .left{
-      position:relative;
-      z-index:1;
-    }
+    .left{ position:relative; z-index:1; }
     .logoBox{
       width: 150px; height: 150px;
       opacity:.22;
@@ -102,12 +99,7 @@
     }
 
     /* Centro */
-    .center{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:1;
-    }
+    .center{ display:flex; align-items:center; justify-content:center; z-index:1; }
     .panel{
       width: min(640px, 100%);
       background: linear-gradient(180deg, var(--card), rgba(255,255,255,.06));
@@ -232,8 +224,17 @@
       padding: 12px 12px;
       box-shadow: 0 10px 26px rgba(0,0,0,.22);
     }
+
+    /* ✅ reloj centrado en columna */
+    .clock{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      gap: 2px;
+    }
     .clock .date{ font-weight:900; font-size: 13px; letter-spacing:.3px; text-transform: capitalize; }
-    .clock .time{ font-weight:950; font-size: 18px; margin-top: 4px; }
+    .clock .time{ font-weight:950; font-size: 18px; margin-top: 2px; }
     .clock .tz{ font-size: 12px; color: var(--muted); margin-top: 2px; }
 
     .calHead{
@@ -279,10 +280,7 @@
     /* Responsive */
     @media (max-width: 980px){
       body{ overflow:auto; }
-      .screen{
-        grid-template-columns: 1fr;
-        padding-bottom: 60px;
-      }
+      .screen{ grid-template-columns: 1fr; padding-bottom: 60px; }
       .tabs{ position: static; width:100%; margin-top: 14px; }
       .left{ display:flex; flex-direction:column; gap:12px; }
       .right{ align-items:stretch; }
@@ -293,7 +291,7 @@
 
 <body>
   <div class="screen">
-    <!-- IZQUIERDA: Logo + pestañas abajo izq vertical -->
+    <!-- IZQUIERDA -->
     <aside class="left">
       <div class="logoBox">
         <img src="logo.png" alt="Logo Bomberos Pergamino">
@@ -306,7 +304,7 @@
       </nav>
     </aside>
 
-    <!-- CENTRO: REGISTRO -->
+    <!-- CENTRO -->
     <main class="center">
       <section class="panel">
         <div class="title">REGISTRO</div>
@@ -328,14 +326,14 @@
           <div class="toast" id="toast"></div>
 
           <div class="footerRow">
-            <button class="btn.secondary" onclick="window.location.href='estado.html'">🔎 CONSULTAR ESTADO</button>
+            <button class="btn secondary" onclick="window.location.href='estado.html'">🔎 CONSULTAR ESTADO</button>
             <div class="hint">Tip: presioná <b>Enter</b> para <b>Entrada</b>.</div>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- DERECHA: Reloj + Calendario -->
+    <!-- DERECHA -->
     <aside class="right">
       <div class="card clock" aria-live="polite">
         <div class="date" id="dateStr">—</div>
@@ -349,7 +347,6 @@
           <div class="calToday" id="calToday">—</div>
         </div>
 
-        <!-- Placeholder: después lo llenamos desde otra base -->
         <p class="calEmpty" id="calEmpty">Sin recordatorios para hoy.</p>
         <ul class="calList" id="calList" style="display:none;"></ul>
       </div>
@@ -359,8 +356,9 @@
   <div class="footerText">Sociedad Bomberos Voluntarios Pergamino</div>
 
 <script>
-const ENDPOINT = "https://script.google.com/macros/s/AKfycbz3YcVPC71YnFxD52aTgfeV9ujbPS1iKwJ2IvFYLKWz1KreZcPSucUx107Dgnzv8YqR/exec";
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbypfafrQgSdBJZ2anRfE-0ttpeK2Yzg9InGO1Tu5O3ShHz4Q3DnbBEJyDX_Xrkvi5IP/exec";
   const TZ = "America/Argentina/Buenos_Aires";
+  const ENDPOINT_CAL = "https://script.google.com/macros/s/AKfycbxI1YYEKCwVon5SwCxRxrmUg5ZYJ3JGKqlP0G53Ubr4gRshs-IUYA7Z_XIO0HDUhn7xew/exec";
 
   // Clock AR
   const fmtDate = new Intl.DateTimeFormat("es-AR", { timeZone: TZ, weekday:"long", year:"numeric", month:"2-digit", day:"2-digit" });
@@ -375,7 +373,65 @@ const ENDPOINT = "https://script.google.com/macros/s/AKfycbz3YcVPC71YnFxD52aTgfe
     document.getElementById("timeStr").textContent = t;
     document.getElementById("calToday").textContent = fmtShort.format(now);
   }
-  tick(); setInterval(tick, 1000);
+function ymdInTZ(){
+  // YYYY-MM-DD en timezone AR
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ, year:"numeric", month:"2-digit", day:"2-digit"
+  }).formatToParts(new Date());
+  const y = parts.find(p=>p.type==="year").value;
+  const m = parts.find(p=>p.type==="month").value;
+  const d = parts.find(p=>p.type==="day").value;
+  return `${y}-${m}-${d}`;
+}
+
+function iconForTipo(tipo){
+  const t = (tipo || "").trim().toLowerCase();
+  if (t === "cumpleaños" || t === "cumpleanos") return "🎂";
+  if (t.includes("reun")) return "📅";
+  if (t.includes("guardia")) return "🧑‍🚒";
+  return "📌";
+}
+
+async function loadCalendar(){
+  const ymd = ymdInTZ();
+
+  const $empty = document.getElementById("calEmpty");
+  const $list  = document.getElementById("calList");
+
+  try{
+    const url = `${ENDPOINT_CAL}?action=calendario&date=${encodeURIComponent(ymd)}`;
+    const res = await fetch(url, { cache:"no-store" });
+    const j = await res.json();
+
+    if(!j.ok) throw new Error(j.error || "Error calendario");
+
+    if(!j.items || j.items.length === 0){
+      $list.style.display = "none";
+      $empty.style.display = "block";
+      $empty.textContent = "Sin recordatorios para hoy.";
+      return;
+    }
+
+    $list.innerHTML = "";
+    for(const it of j.items){
+      const li = document.createElement("li");
+      li.textContent = `${iconForTipo(it.tipo)} ${it.mensaje}`;
+      $list.appendChild(li);
+    }
+
+    $empty.style.display = "none";
+    $list.style.display = "block";
+
+  }catch(err){
+    $list.style.display = "none";
+    $empty.style.display = "block";
+    $empty.textContent = "No se pudo cargar el calendario.";
+    // Si querés debug visual:
+    // console.error(err);
+  }
+}
+  tick();
+  setInterval(tick, 1000);
 
   // UI helpers
   const $legajo = document.getElementById("legajo");
@@ -391,49 +447,75 @@ const ENDPOINT = "https://script.google.com/macros/s/AKfycbz3YcVPC71YnFxD52aTgfe
     setTimeout(()=>{ $toast.style.display = "none"; }, 4200);
   }
   function cleanLegajo(){ $legajo.value=""; $legajo.focus(); }
-  function onlyDigits(s){ return /^\d+$/.test(s); }
 
-  $legajo.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); fichar("INGRESO"); } });
+  $legajo.addEventListener("keydown", (e)=>{
+    if(e.key==="Enter"){
+      e.preventDefault();
+      fichar("INGRESO");
+    }
+  });
 
-  async function getIP(){
+  async function getIPFast(timeoutMs = 350){
     try{
-      const r = await fetch("https://api.ipify.org?format=json", {cache:"no-store"});
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+      const r = await fetch("https://api.ipify.org?format=json", { signal: ctrl.signal, cache:"no-store" });
+      clearTimeout(t);
       const j = await r.json();
       return j.ip || "";
-    }catch(e){ return ""; }
-  }
-
-  async function fichar(movimiento){
-    const legajo = ($legajo.value || "").trim();
-    if(!onlyDigits(legajo)){ showToast("Legajo inválido. Usá solo números.", "err"); return; }
-
-    setBusy(true);
-
-    const ip = await getIP();
-    const payload = { legajo, movimiento, ip_externa: ip, user_agent: `${ip} | ${navigator.userAgent}`
-};
-
-    try{
-      const res = await fetch(ENDPOINT, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const j = await res.json().catch(()=>({ok:false,error:"Respuesta inválida del servidor"}));
-      if(!j.ok) showToast(`Error: ${j.error || "desconocido"}`, "err");
-      else showToast("Registro exitoso", "ok");
-    }catch(err){
-      showToast(`Error de red: ${String(err)}`, "err");
-    }finally{
-      cleanLegajo();
-      setBusy(false);
+    }catch(e){
+      return "";
     }
   }
 
-  // Placeholder calendario: después conectamos otra base y llenamos calList
-  // function loadCalendar(){ ... }
+  // ✅ modo optimista (libera el panel rápido)
+  async function fichar(movimiento){
+    const legajo = ($legajo.value || "").trim();
+    if(!/^\d+$/.test(legajo)){
+      showToast("Legajo inválido. Usá solo números.", "err");
+      return;
+    }
 
-  window.addEventListener("load", ()=> $legajo.focus());
+    setBusy(true);
+
+    const sendPromise = (async ()=>{
+      const ip = await getIPFast(350);
+      const ua = `${ip} | ${navigator.userAgent}`;
+
+      const form = new FormData();
+      form.append("legajo", legajo);
+      form.append("movimiento", movimiento);
+      form.append("ip_externa", ip);
+      form.append("user_agent", ua);
+
+      const res = await fetch(ENDPOINT, { method:"POST", body: form });
+      const text = await res.text();
+      return JSON.parse(text);
+    })();
+
+    // liberar YA
+    cleanLegajo();
+    setBusy(false);
+    showToast("Registro enviado…", "ok");
+
+    // confirmar/error
+    try{
+      const j = await sendPromise;
+      if(!j.ok){
+        showToast(`Error: ${j.error || "desconocido"}`, "err");
+      }else{
+        showToast("Registro confirmado", "ok");
+      }
+    }catch(err){
+      showToast(`Error de red: ${String(err)}`, "err");
+    }
+  }
+
+window.addEventListener("load", ()=>{
+  $legajo.focus();
+  loadCalendar();
+  setInterval(loadCalendar, 60000); // refresca cada 60s
+}); 
 </script>
 </body>
 </html>
